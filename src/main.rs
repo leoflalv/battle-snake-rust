@@ -12,6 +12,8 @@ use battle_snake_rust::handlers::{handle_end, handle_index, handle_move, handle_
 
 #[shuttle_runtime::main]
 async fn main() -> shuttle_rocket::ShuttleRocket {
+    env_logger::init();
+
     // Lots of web hosting services expect you to bind to the port specified by the `PORT`
     // environment variable. However, Rocket looks at the `ROCKET_PORT` environment variable.
     // If we find a value for `PORT`, we set `ROCKET_PORT` to that value.
@@ -24,8 +26,6 @@ async fn main() -> shuttle_rocket::ShuttleRocket {
     if env::var("RUST_LOG").is_err() {
         env::set_var("RUST_LOG", "info");
     }
-
-    env_logger::init();
 
     info!("Starting Battlesnake Server...");
 
