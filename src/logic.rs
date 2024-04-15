@@ -1,8 +1,8 @@
 mod food_finder;
+mod move_refinator;
 mod move_validator;
 
 use log::info;
-use rand::seq::SliceRandom;
 use serde_json::{json, Value};
 
 use crate::{
@@ -48,9 +48,24 @@ pub fn get_move(_game: &Game, turn: &i32, board: &Board, you: &Battlesnake) -> V
     // Are there any safe moves left?
     let safe_moves = valid_moves.into_iter().collect::<Vec<_>>();
 
+    let recommended = move_refinator::recommend_move(&safe_moves, you, board);
+
+    if let Some(direction) = recommended {
+        info!("MOVE {}: {}", turn, direction.as_str());
+        return json!({ "move": direction.as_str() });
+    }
+
+    let refined_moves = move_refinator::refined_movements(&safe_moves, &board);
+
+    let options = if refined_moves.len() > 0 {
+        refined_moves
+    } else {
+        safe_moves
+    };
+
     // TODO: Step 4 - Move towards food instead of random, to regain health and survive longer
     // let food = &board.food;
-    let next_move = get_next_step(board, you, &safe_moves);
+    let next_move = get_next_step(board, you, &options);
     let chosen = next_move.as_str();
 
     info!("MOVE {}: {}", turn, chosen);
