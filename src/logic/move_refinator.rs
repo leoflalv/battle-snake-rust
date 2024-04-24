@@ -12,7 +12,7 @@ pub fn recommend_move<'a>(
 
         for movement in movement_array.iter() {
             let possible_enemy = Coord::new(movement.0 + x, movement.1 + y);
-            let enemy = get_snake(&possible_enemy, board);
+            let enemy = get_snake(&possible_enemy, board, you);
 
             if let Some(snake) = enemy {
                 if you.length > snake.length {
@@ -25,22 +25,31 @@ pub fn recommend_move<'a>(
     None
 }
 
-pub fn refined_movements(options: &Vec<Direction>, board: &Board) -> Vec<Direction> {
+pub fn refined_movements(
+    options: &Vec<Direction>,
+    board: &Board,
+    you: &Battlesnake,
+) -> Vec<Direction> {
     options
         .iter()
-        .filter(|opt| avoid_loser_hits(opt.get_coord(), board))
+        .filter(|opt| avoid_loser_hits(opt.get_coord(), board, you))
         .cloned()
         .collect()
 }
 
-fn avoid_loser_hits(next_movement: &Coord, board: &Board) -> bool {
+fn avoid_loser_hits(next_movement: &Coord, board: &Board, you: &Battlesnake) -> bool {
     let movement_array = vec![(0, 1), (1, 0), (0, -1), (-1, 0)]; // All the available x, y moves
 
     for movement in movement_array {
         let possible_enemy = Coord::new(movement.0 + next_movement.x, movement.1 + next_movement.y);
-        let enemy = get_snake(&possible_enemy, board);
+        let enemy = get_snake(&possible_enemy, board, you);
 
         if enemy.is_some() {
+            println!("possible_enemy: {:?}", possible_enemy);
+            println!("next_movement: {:?}", next_movement);
+            println!("movement: {:?}", movement);
+            println!("enemy: {:?}", enemy);
+            println!("-------");
             return false;
         }
     }
@@ -48,15 +57,23 @@ fn avoid_loser_hits(next_movement: &Coord, board: &Board) -> bool {
     true
 }
 
-fn get_snake<'a>(point: &Coord, board: &'a Board) -> Option<&'a Battlesnake> {
-    for enemy in &board.snakes {
+fn remove_you_from_snakes(you: &Battlesnake, snakes: &Vec<Battlesnake>) -> Vec<Battlesnake> {
+    snakes
+        .iter()
+        .filter(|snake| snake.head != you.head)
+        .cloned()
+        .collect()
+}
+
+fn get_snake(point: &Coord, board: &Board, you: &Battlesnake) -> Option<Battlesnake> {
+    for enemy in remove_you_from_snakes(you, &board.snakes) {
         let is_an_enemy = enemy.body[..enemy.body.len() - 1]
             .iter()
             .position(|x| x == point)
             .is_some();
 
         if is_an_enemy {
-            return Some(enemy);
+            return Some(enemy.clone());
         }
     }
 
@@ -106,28 +123,38 @@ mod tests {
 
     #[test]
     fn found_possible_hit() {
-        let (_, board, _) = get_mock_data(
+        let (_, board, you) = get_mock_data(
             &vec![Coord::new(6, 3), Coord::new(5, 3), Coord::new(4, 3)],
             &vec![Coord::new(8, 3), Coord::new(9, 3)],
         );
 
         let next_step = Coord::new(7, 3);
 
-        let response = avoid_loser_hits(&next_step, &board);
+        let response = avoid_loser_hits(&next_step, &board, &you);
 
         assert_eq!(response, false)
     }
 
     #[test]
     fn not_possible_hit() {
-        let (_, board, _) = get_mock_data(
-            &vec![Coord::new(5, 3), Coord::new(4, 3), Coord::new(3, 3)],
-            &vec![Coord::new(8, 3), Coord::new(9, 3)],
+        let (_, board, you) = get_mock_data(
+            &vec![
+                Coord::new(5, 2),
+                Coord::new(6, 2),
+                Coord::new(7, 2),
+                Coord::new(8, 2),
+            ],
+            &vec![
+                Coord::new(4, 3),
+                Coord::new(3, 3),
+                Coord::new(2, 3),
+                Coord::new(1, 3),
+            ],
         );
 
-        let next_step = Coord::new(7, 3);
+        let next_step = Coord::new(4, 4);
 
-        let response = avoid_loser_hits(&next_step, &board);
+        let response = avoid_loser_hits(&next_step, &board, &you);
 
         assert_eq!(response, true);
     }
@@ -166,5 +193,33 @@ mod tests {
         let response = recommend_move(&options, &you, &board);
 
         assert_eq!(response, None);
+    }
+
+    #[test]
+    fn get_correct_refined_moves() {
+        let (_, board, you) = get_mock_data(
+            &vec![
+                Coord::new(5, 2),
+                Coord::new(6, 2),
+                Coord::new(7, 2),
+                Coord::new(8, 2),
+            ],
+            &vec![
+                Coord::new(4, 3),
+                Coord::new(3, 3),
+                Coord::new(2, 3),
+                Coord::new(1, 3),
+            ],
+        );
+
+        let options = vec![
+            Direction::Up(Coord::new(4, 4)),
+            Direction::Down(Coord::new(4, 2)),
+            Direction::Right(Coord::new(5, 3)),
+        ];
+
+        let reponse = refined_movements(&options, &board, &you);
+
+        assert_eq!(reponse, vec![Direction::Up(Coord::new(4, 4))]);
     }
 }

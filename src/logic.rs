@@ -55,7 +55,7 @@ pub fn get_move(_game: &Game, turn: &i32, board: &Board, you: &Battlesnake) -> V
         return json!({ "move": direction.as_str() });
     }
 
-    let refined_moves = move_refinator::refined_movements(&safe_moves, &board);
+    let refined_moves = move_refinator::refined_movements(&safe_moves, &board, &you);
 
     let options = if refined_moves.len() > 0 {
         refined_moves
