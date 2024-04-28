@@ -15,7 +15,7 @@ pub fn recommend_move<'a>(
             let enemy = get_snake(&possible_enemy, board, you);
 
             if let Some(snake) = enemy {
-                if you.length > snake.length {
+                if you.length > snake.length && snake.head == possible_enemy {
                     return Some(option);
                 }
             }
