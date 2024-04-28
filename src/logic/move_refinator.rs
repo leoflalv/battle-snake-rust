@@ -45,11 +45,6 @@ fn avoid_loser_hits(next_movement: &Coord, board: &Board, you: &Battlesnake) -> 
         let enemy = get_snake(&possible_enemy, board, you);
 
         if enemy.is_some() {
-            println!("possible_enemy: {:?}", possible_enemy);
-            println!("next_movement: {:?}", next_movement);
-            println!("movement: {:?}", movement);
-            println!("enemy: {:?}", enemy);
-            println!("-------");
             return false;
         }
     }
