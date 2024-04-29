@@ -23,7 +23,6 @@ fn is_valid_move(board: &Board, you: &Battlesnake, next_movement: &Coord) -> boo
     is_inside_bounds(board, next_movement)
         && is_not_own_body(you, next_movement)
         && is_not_an_enemy(board, next_movement)
-        && is_not_a_hazard(board, next_movement)
 }
 
 fn is_inside_bounds(board: &Board, next_movement: &Coord) -> bool {
