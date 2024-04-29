@@ -23,6 +23,7 @@ fn is_valid_move(board: &Board, you: &Battlesnake, next_movement: &Coord) -> boo
     is_inside_bounds(board, next_movement)
         && is_not_own_body(you, next_movement)
         && is_not_an_enemy(board, next_movement)
+        && is_not_a_hazard(board, next_movement)
 }
 
 fn is_inside_bounds(board: &Board, next_movement: &Coord) -> bool {
@@ -54,6 +55,14 @@ fn is_not_an_enemy(board: &Board, next_movement: &Coord) -> bool {
     true
 }
 
+fn is_not_a_hazard(board: &Board, next_movement: &Coord) -> bool {
+    board
+        .hazards
+        .iter()
+        .position(|x| x == next_movement)
+        .is_none()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -63,15 +72,23 @@ mod tests {
         head: Coord,
         next_move: Coord,
         snakes: Vec<Battlesnake>,
+        hazards: Vec<Coord>,
     }
 
     impl TestCase {
-        fn new(body: Vec<Coord>, head: Coord, next_move: Coord, snakes: Vec<Battlesnake>) -> Self {
+        fn new(
+            body: Vec<Coord>,
+            head: Coord,
+            next_move: Coord,
+            snakes: Vec<Battlesnake>,
+            hazards: Vec<Coord>,
+        ) -> Self {
             TestCase {
                 body,
                 head,
                 next_move,
                 snakes,
+                hazards,
             }
         }
     }
@@ -80,13 +97,14 @@ mod tests {
         body: &Vec<Coord>,
         head: Coord,
         snakes: Vec<Battlesnake>,
+        hazards: &Vec<Coord>,
     ) -> (Board, Battlesnake) {
         let board = Board {
             height: 5,
             width: 5,
             food: vec![],
             snakes,
-            hazards: vec![],
+            hazards: hazards.to_vec(),
         };
 
         let battlesnake = Battlesnake {
@@ -115,12 +133,14 @@ mod tests {
                     Coord::new(0, 0),
                     Coord::new(-1, 0),
                     vec![],
+                    vec![],
                 ),
                 // Go top outside bounds
                 TestCase::new(
                     vec![Coord::new(0, 0), Coord::new(1, 0), Coord::new(2, 0)],
                     Coord::new(0, 0),
                     Coord::new(0, -1),
+                    vec![],
                     vec![],
                 ),
                 // Go right outside bounds
@@ -129,6 +149,7 @@ mod tests {
                     Coord::new(4, 4),
                     Coord::new(5, 4),
                     vec![],
+                    vec![],
                 ),
                 // Go down outside bounds
                 TestCase::new(
@@ -136,12 +157,17 @@ mod tests {
                     Coord::new(4, 4),
                     Coord::new(4, 5),
                     vec![],
+                    vec![],
                 ),
             ];
 
             for test_case in test_cases.iter() {
-                let (board, _) =
-                    setup_game(&test_case.body, test_case.head, test_case.snakes.clone());
+                let (board, _) = setup_game(
+                    &test_case.body,
+                    test_case.head,
+                    test_case.snakes.clone(),
+                    &test_case.hazards,
+                );
 
                 let is_valid = is_inside_bounds(&board, &test_case.next_move);
                 assert_eq!(false, is_valid);
@@ -156,18 +182,24 @@ mod tests {
                     Coord::new(0, 0),
                     Coord::new(0, 1),
                     vec![],
+                    vec![],
                 ),
                 TestCase::new(
                     vec![Coord::new(4, 4), Coord::new(4, 3), Coord::new(4, 2)],
                     Coord::new(4, 4),
                     Coord::new(3, 4),
                     vec![],
+                    vec![],
                 ),
             ];
 
             for test_case in test_cases.iter() {
-                let (board, _) =
-                    setup_game(&test_case.body, test_case.head, test_case.snakes.clone());
+                let (board, _) = setup_game(
+                    &test_case.body,
+                    test_case.head,
+                    test_case.snakes.clone(),
+                    &test_case.hazards,
+                );
 
                 let is_valid = is_inside_bounds(&board, &test_case.next_move);
                 assert_eq!(true, is_valid);
@@ -186,6 +218,7 @@ mod tests {
                     Coord::new(3, 0),
                     Coord::new(2, 0),
                     vec![],
+                    vec![],
                 ),
                 TestCase::new(
                     vec![
@@ -198,12 +231,17 @@ mod tests {
                     Coord::new(2, 2),
                     Coord::new(2, 1),
                     vec![],
+                    vec![],
                 ),
             ];
 
             for test_case in test_cases.iter() {
-                let (_, battlesnake) =
-                    setup_game(&test_case.body, test_case.head, test_case.snakes.clone());
+                let (_, battlesnake) = setup_game(
+                    &test_case.body,
+                    test_case.head,
+                    test_case.snakes.clone(),
+                    &test_case.hazards,
+                );
 
                 let is_valid = is_not_own_body(&battlesnake, &test_case.next_move);
                 assert_eq!(false, is_valid);
@@ -224,11 +262,16 @@ mod tests {
                 Coord::new(1, 2),
                 Coord::new(1, 1),
                 vec![],
+                vec![],
             )];
 
             for test_case in test_cases.iter() {
-                let (_, battlesnake) =
-                    setup_game(&test_case.body, test_case.head, test_case.snakes.clone());
+                let (_, battlesnake) = setup_game(
+                    &test_case.body,
+                    test_case.head,
+                    test_case.snakes.clone(),
+                    &test_case.hazards,
+                );
 
                 let is_valid = is_not_own_body(&battlesnake, &test_case.next_move);
                 assert_eq!(true, is_valid);
@@ -255,11 +298,16 @@ mod tests {
                     latency: String::from(""),
                     shout: None,
                 }],
+                vec![],
             )];
 
             for test_case in test_cases.iter() {
-                let (board, _) =
-                    setup_game(&test_case.body, test_case.head, test_case.snakes.clone());
+                let (board, _) = setup_game(
+                    &test_case.body,
+                    test_case.head,
+                    test_case.snakes.clone(),
+                    &test_case.hazards,
+                );
 
                 let is_valid = is_not_an_enemy(&board, &test_case.next_move);
                 assert_eq!(false, is_valid);
@@ -282,13 +330,68 @@ mod tests {
                     latency: String::from(""),
                     shout: None,
                 }],
+                vec![],
             )];
 
             for test_case in test_cases.iter() {
-                let (board, _) =
-                    setup_game(&test_case.body, test_case.head, test_case.snakes.clone());
+                let (board, _) = setup_game(
+                    &test_case.body,
+                    test_case.head,
+                    test_case.snakes.clone(),
+                    &test_case.hazards,
+                );
 
                 let is_valid = is_not_an_enemy(&board, &test_case.next_move);
+                assert_eq!(true, is_valid);
+            }
+        }
+    }
+
+    mod is_not_a_hazard_test {
+        use super::*;
+
+        #[test]
+        fn crash_with_hazard() {
+            let test_cases = vec![TestCase::new(
+                vec![Coord::new(1, 2), Coord::new(2, 2)],
+                Coord::new(1, 2),
+                Coord::new(1, 1),
+                vec![],
+                vec![Coord::new(1, 1)],
+            )];
+
+            for test_case in test_cases.iter() {
+                let (board, _) = setup_game(
+                    &test_case.body,
+                    test_case.head,
+                    test_case.snakes.clone(),
+                    &test_case.hazards,
+                );
+
+                let is_valid = is_not_a_hazard(&board, &test_case.next_move);
+                assert_eq!(false, is_valid);
+            }
+        }
+
+        #[test]
+        fn no_crash_with_hazard() {
+            let test_cases = vec![TestCase::new(
+                vec![Coord::new(1, 2), Coord::new(2, 2)],
+                Coord::new(1, 2),
+                Coord::new(1, 3),
+                vec![],
+                vec![Coord::new(1, 1)],
+            )];
+
+            for test_case in test_cases.iter() {
+                let (board, _) = setup_game(
+                    &test_case.body,
+                    test_case.head,
+                    test_case.snakes.clone(),
+                    &test_case.hazards,
+                );
+
+                let is_valid = is_not_a_hazard(&board, &test_case.next_move);
                 assert_eq!(true, is_valid);
             }
         }
@@ -307,7 +410,7 @@ mod tests {
                 Coord::new(1, 1),
             ];
             let head = Coord::new(2, 2);
-            let (board, battlesnake) = setup_game(&body, head, vec![]);
+            let (board, battlesnake) = setup_game(&body, head, vec![], &vec![]);
             let valid_moves = get_valid_moves(&board, &battlesnake);
             let correct_answer: HashSet<Direction> = vec![
                 Direction::Left(Coord::new(1, 2)),
